@@ -1,0 +1,16 @@
+package com.knowledge_graph.entity;
+
+import lombok.Data;
+import org.springframework.data.neo4j.core.schema.Node;
+
+/**
+ * @program: springboot_ssmp
+ * @description:
+ * @author: Lin
+ * @create: 2023-05-03 23:05
+ **/
+
+@Node(labels = "dots")
+public class Dots extends Nodes {
+
+}

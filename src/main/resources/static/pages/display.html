@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="zh">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+
+    <title>知识图谱-图数据库</title>
+
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link rel="stylesheet" href="../css/display.css">
+
+    <link rel="stylesheet" href="../css/top.css">
+
+
+</head>
+
+<script src="../js/axios-0.18.0.js"></script>
+<script src="../js/vue.js"></script>
+<script type="text/javascript" src="../js/neovis.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+
+
+<body>
+<div class="container" id="app">
+    <div class="box_top">
+        <img src="../image/logo.jpg" alt="logo" style="width: 40px ; height: 40px; vertical-align: top;margin-left: 0px" >
+        <a href="display.html">图谱</a>
+        <a href="teacher.html">教师界面</a>
+        <a href="student.html">学生界面</a>
+        <a href="users.html">用户管理</a>
+    </div>
+    <div class="select">
+        条件查询:
+        <el-input v-model="input1" placeholder="输入结点名" style="width: 300px" id="name"></el-input>
+        <el-button type="primary" id="selectNodeLike" @click="findNodeLike()">模糊查询结点</el-button>
+        <el-button type="primary" id="selectNode" @click="findNodeByName()">查询结点</el-button>
+        最短路径:
+        <el-input v-model="input2" placeholder="起始结点名" style="width: 150px" id="first"></el-input>
+        <el-input v-model="input3" placeholder="终点结点名" style="width: 150px" id="last"></el-input>
+        <el-button type="primary" id="selectShortPath" @click="selectShortPath()">最短路径查询</el-button>
+    </div>
+    <div class="todo">
+        基本操作:
+        <el-button type="primary" id="stabilize" @click="stabilize()">固定</el-button>
+        <el-button type="primary" id="selectAll" @click="findAll()">查询所有</el-button>
+        <el-button type="primary" id="addNode" @click="openAdd()">新增结点</el-button>
+        <el-button type="primary" id="updateNode" @click="updateAdd()">修改结点</el-button>
+        <el-button type="primary" id="addRelation" @click="openRelation()">新增关系</el-button>
+        <el-button type="primary" id="updateRelation" @click="updateRelation()">修改关系</el-button>
+        <el-button type="primary" id="chapter" @click="findChapter()">章节</el-button>
+        <el-button type="primary" id="section" @click="findSection()">小节</el-button>
+        <el-button type="primary" id="point" @click="findPoint()">知识点</el-button>
+        <el-button type="primary" id="section" @click="dialogVisible = true">导入</el-button>
+        <el-button type="primary" id="point">导出</el-button>
+    </div>
+    <div id="aside" class="d3">
+        <el-card class="box-card">
+            <div slot="header" class="clearfix">
+                <span style="color:#353535">结点信息</span>
+                <el-button style="float: right; padding: 7px 0;color:#3b7aff;" type="text">编辑</el-button>
+            </div>
+            <el-descriptions title="用户信息">
+                <el-descriptions-item label="节点信息"></el-descriptions-item>
+                <textarea id="message" v-model="nodeInfo" rows="15" cols="25"></textarea>
+
+            </el-descriptions>
+
+        </el-card>
+    </div>
+    <div id="viz"></div>
+    <!-- 新增标签弹层 -->
+    <div class="add-form">
+
+        <el-dialog title="新增节点" :visible.sync="addFormVisible">
+
+            <el-form ref="dataAddForm" :model="formData" label-position="right"
+                     label-width="100px">
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点名" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="视频链接">
+                            <el-input v-model="formData.url"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="定义">
+                            <el-input v-model="formData.definition"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="特点">
+                            <el-input v-model="formData.feature"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="页码">
+                            <el-input v-model="formData.page"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <div style="margin-top: 20px">
+                    <el-radio-group v-model="label" size="medium">
+                        <el-radio-button label="point"></el-radio-button>
+                        <el-radio-button label="section"></el-radio-button>
+                        <el-radio-button label="chapter"></el-radio-button>
+                    </el-radio-group>
+                </div>
+            </el-form>
+
+            <div slot="footer" class="dialog-footer">
+
+                <el-button @click="cancel()">取消</el-button>
+
+                <el-button type="primary" @click="createNode()">确定</el-button>
+
+            </div>
+
+        </el-dialog>
+
+    </div>
+    <!--    导入1-->
+    <!-- 新增标签弹层 -->
+
+    <div class="update-form">
+
+        <el-dialog title="修改节点" :visible.sync="updateFormVisible">
+
+            <el-form ref="dataAddForm" :model="formData" label-position="right"
+                     label-width="100px">
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点名" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="视频链接">
+                            <el-input v-model="formData.url"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="定义">
+                            <el-input v-model="formData.definition"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="特点">
+                            <el-input v-model="formData.feature"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="页码">
+                            <el-input v-model="formData.page"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <div style="margin-top: 20px">
+                    <el-radio-group v-model="label" size="medium">
+                        <el-radio-button label="point"></el-radio-button>
+                        <el-radio-button label="section"></el-radio-button>
+                        <el-radio-button label="chapter"></el-radio-button>
+                    </el-radio-group>
+                </div>
+            </el-form>
+
+            <div slot="footer" class="dialog-footer">
+
+                <el-button @click="cancel()">取消</el-button>
+
+                <el-button type="primary" @click="createNode()">确定</el-button>
+
+            </div>
+
+        </el-dialog>
+
+    </div>
+
+
+    <div class="add-relation">
+
+        <el-dialog title="新增关系" :visible.sync="addRelationVisible">
+
+            <el-form ref="dataAddForm" :model="formData" label-position="right"
+                     label-width="100px">
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点A类型" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点A名称" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点B类型" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点B名称">
+                            <el-input v-model="formData.url"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="关系">
+                            <el-input v-model="formData.definition"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <div style="margin-top: 20px">
+                    <el-radio-group v-model="label" size="medium">
+                        <el-radio-button label="point"></el-radio-button>
+                        <el-radio-button label="section"></el-radio-button>
+                        <el-radio-button label="chapter"></el-radio-button>
+                    </el-radio-group>
+                </div>
+            </el-form>
+
+            <div slot="footer" class="dialog-footer">
+
+                <el-button @click="cancel()">取消</el-button>
+
+                <el-button type="primary" @click="createNode()">确定</el-button>
+
+            </div>
+
+        </el-dialog>
+
+    </div>
+
+    <div class="add-relation">
+
+        <el-dialog title="修改关系" :visible.sync="updateRelationVisible">
+
+            <el-form ref="dataAddForm" :model="formData" label-position="right"
+                     label-width="100px">
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点A类型" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点A名称" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点B类型" prop="name">
+                            <el-input v-model="formData.name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="节点B名称">
+                            <el-input v-model="formData.url"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="关系">
+                            <el-input v-model="formData.definition"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <div style="margin-top: 20px">
+                    <el-radio-group v-model="label" size="medium">
+                        <el-radio-button label="point"></el-radio-button>
+                        <el-radio-button label="section"></el-radio-button>
+                        <el-radio-button label="chapter"></el-radio-button>
+                    </el-radio-group>
+                </div>
+            </el-form>
+
+            <div slot="footer" class="dialog-footer">
+
+                <el-button @click="cancel()">取消</el-button>
+
+                <el-button type="primary" @click="createNode()">确定</el-button>
+
+            </div>
+
+        </el-dialog>
+
+    </div>
+
+
+
+    <el-dialog title="提示" :visible.sync="dialogVisible" width="35%" >
+        <span>
+           <el-upload
+                   class="upload-demo"
+                   action="https://jsonplaceholder.typicode.com/posts/"
+                   :before-remove="beforeRemove"
+                   :http-request="uploadFile"
+                   multiple
+                   enctype="multipart/form-data"
+                   :file-list="fileList">
+  <el-button size="small" type="primary">点击上传</el-button>
+  <div slot="tip" class="el-upload__tip">只能上传csv文件</div>
+</el-upload>
+        </span>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="importFile()">确 定</el-button>
+        </span>
+    </el-dialog>
+
+</div>
+</body>
+
+
+<script>
+    var vue = new Vue({
+        el: '#app',
+        data: {
+            label: 'point',
+            fileList: [],
+            //表单数据
+            formData: {},
+            //添加表单是否可见
+            addFormVisible: false,
+            updateFormVisible: false,
+            addRelationVisible: false,
+            updateRelationVisible: false,
+            dialogVisible: false,
+            //图数据库容器
+            viz: {},
+            cypher: '',
+            input1: '',
+            input2: '',
+            input3: '',
+            //点击获取的结点信息
+            node: {
+                id: '',
+                name: '',
+                url: '',
+                definition: '',
+                feature: '',
+                page: ''
+            },
+            nodeInfo: "",
+        },
+        mounted() {
+            this.draw()
+        },
+        methods: {
+            //绘制知识图谱
+            draw() {
+                var config = {
+                    container_id: "viz",
+                    server_url: "bolt://127.0.0.1:7687",
+                    server_user: "neo4j",
+                    server_password: "123456",
+                    labels: {
+                        point: {
+                            caption: "name",
+                        },
+                        section: {
+                            caption: "name",
+                        },
+                        chapter: {
+                            caption: "name",
+                        },
+                        book: {
+                            caption: "name",
+                        },
+                        dots: {
+                            caption: "name",
+                        },
+                    },
+                    relationships: {
+                        include: {},
+                        contain: {},
+                        prior: {},
+                        involve: {},
+                    },
+                    arrows: true,
+                    hierarchical: false,
+                    initial_cypher: "",
+                };
+                viz = new NeoVis.default(config);
+                viz.render();
+                viz.registerOnEvent("clickNode", (e) => {
+                    viz["_network"].on("doubleClick", () => {
+                        this.getNodeInFormation(e.nodeId);
+                        viz.updateWithCypher('match p = (n)-[r]->() where id(n)= ' + e.nodeId + ' return p');
+                        viz.reload();
+                    });
+                });
+            },
+
+            //执行cypher语句
+            find() {
+                if (this.cypher.length > 3) {
+                    viz.renderWithCypher(this.cypher);
+                } else {
+                    viz.reload();
+                }
+            },
+            //查询所有
+            findAll() {
+                this.cypher = "MATCH n=()-[]->() RETURN n ;"
+                this.find()
+            },
+            //查询章节
+            findChapter() {
+                this.cypher = "match p=(:book)-[]->(p2:chapter) return p;"
+                this.find()
+            },
+            //查询小节
+            findSection() {
+                this.cypher = "match p1=(:chapter)-[]-(:section)  return p1;"
+                this.find()
+            },
+            //查询知识点
+            findPoint() {
+                this.cypher = "match (p1:point)-[]->(p2) return p1;"
+                this.find()
+            },
+            //根据结点名查询结点
+            findNodeByName() {
+                this.cypher = "match q=({name:'" + $("#name").val() + "'})<-[*]-(:book) return q;"
+                // this.getIdByName( $("#name").val())
+                // this.getNodeInFormation(this.node.id)
+                this.find()
+            },
+            //根据结点名模糊查询结点
+            findNodeLike() {
+                this.cypher = "match p=(n)-[]-() where n.name =~\"" + $("#name").val() + ".*\" return p "
+                this.find()
+            },
+            //固定
+            stabilize() {
+                viz.stabilize();
+            },
+            //根据两节点名查询最短路径
+            selectShortPath() {
+                this.cypher = "Match p=shortestPath((p1)-[*]-(p2)) where p1.name='" + $("#first").val() + "' and p2.name='" + $("#last").val() + "' return p";
+                this.find()
+            },
+            getNodeInFormation(ids) {
+                this.node.id = ids;
+                axios.get("/display/" + this.node.id).then(res => {
+                    this.node.name = res.data.data.name;
+                    this.node.url = res.data.data.url;
+                    this.node.definition = res.data.data.definition;
+                    this.node.feature = res.data.data.feature;
+                    this.node.page = res.data.data.page;
+
+                    this.nodeInfo = "编号:\t" + this.node.id + "\n";
+                    if (this.node.name) {
+                        this.nodeInfo += "名称:\t" + this.node.name + "\n";
+                    }
+
+                    if (this.node.definition) {
+                        this.nodeInfo += "定义:\n\t" + this.node.definition + "\n";
+                    }
+                    if (this.node.feature) {
+                        this.nodeInfo += "特点:\n\t" + this.node.feature + "\n";
+                    }
+                    if (this.node.page) {
+                        this.nodeInfo += "课本页码:\t" + this.node.page + "\n";
+                    }
+                    if (this.node.url) {
+                        this.nodeInfo += "视频资源:\t" + this.node.url + "\n";
+
+                    }
+                })
+            },
+            openAdd() {
+                this.addFormVisible = true;
+                this.formData = {};
+            },
+            updateAdd() {
+                this.updateFormVisible = true;
+                this.formData = {};
+            },
+            openRelation() {
+                this.addRelationVisible = true;
+                this.formData = {};
+            },
+            updateRelation() {
+                this.updateRelationVisible = true;
+                this.formData = {};
+            },
+            //取消添加
+            cancel() {
+                this.addFormVisible = false;
+                this.updateFormVisible = false;
+                this.addRelationVisible = false;
+                this.updateRelationVisible = false;
+                this.$message.info("操作已取消!")
+            },
+            createNode() {
+                axios.post("/display/" + this.label, this.formData).then(res => {
+                    //判断当前操作是否成功
+                    if (res.data.flag) {
+                        //关闭弹层
+                        this.addFormVisible = false;
+                        this.$message.success(res.data.msg);
+                    } else {
+                        this.$message.success(res.data.msg);
+                    }
+                }).finally(() => {
+                    this.findAll();
+                })
+            },
+            //导入csv文件
+            uploadFile(param) {
+                const File = param.file;
+                let formDataInfo = new FormData();
+                formDataInfo.append("file", File);
+                axios.post("/display/loadFile" , formDataInfo).then(res => {
+
+                })
+            },
+            beforeRemove(file, fileList) {
+                return this.$confirm(`确定移除 ${file.name}？`);
+            },
+
+            importFile() {
+                this.findAll();
+                this.dialogVisible = false;
+                this.$message.success("导入成功!");
+            },
+
+        }
+    })
+
+</script>
+</html>

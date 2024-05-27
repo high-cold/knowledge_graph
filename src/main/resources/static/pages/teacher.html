@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <script src="//unpkg.com/xlsx@0.16.9/xlsx.mini.js"></script>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: solid 1px #6d6d6d;
+            padding: 5px 10px;
+            width: 100px;
+        }
+
+    </style>
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+
+    <link rel="stylesheet" href="../css/teacher.css">
+
+    <link rel="stylesheet" href="../css/top.css">
+</head>
+
+<script src="../js/axios-0.18.0.js"></script>
+<script src="../js/vue.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+
+
+
+<body>
+
+<div class="box_top">
+    <img src="../image/logo.jpg" alt="logo" style="width: 40px ; height: 40px; vertical-align: top;margin-left: 0px" >
+    <a href="display.html">图谱</a>
+    <a href="teacher.html">教师界面</a>
+    <a href="student.html">学生界面</a>
+    <a href="users.html">用户管理</a>
+</div>
+
+<input type="file" id="file" style="display: none;"
+       accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+<div class = "show_head">
+    <label name="textarea" class="name">SM</label>
+    <img src="head.jpg" class="touxiang">
+    <label name="textarea" class="sign">点击此处编辑签名</label>
+</div>
+
+
+
+<div class = "showexcel">
+    <div style="text-align: center;margin-top: 2px">
+        <button id = "loadFile" class = "btn" >展示</button>
+        <textarea style="margin-left: 60px;margin-top: 8px;margin-right:5px;vertical-align: top;font-size:22px"
+                  rows="1"
+                  onKeyDown="textdown(event)" onKeyUp="textup()"
+                  onfocus="if(value=='输入学生姓名'){value=''}"
+                  onblur="if (value ==''){value='输入学生姓名'}">输入学生姓名</textarea>
+        <a href="student.html">
+        <button id = "searchStudent" class = "btn">查询</button>
+        </a>
+    </div>
+    <div style="text-align: center;margin-left: 0px">
+        <div id="result" ></div>
+    </div>
+</div>
+
+</body>
+
+
+
+<script>
+
+    // 文件普通操作
+    var handler = {};
+    // 文件导出操作
+    var exportHandler = {};
+
+    function selectFile() {
+        document.getElementById("file").click();
+    }
+
+    document.getElementById("loadFile").addEventListener("click", function (e) {
+        document.getElementById("file").click();
+    });
+
+    // 操作导出
+    function exportTable(handlerName) {
+        if (exportHandler[handlerName]) {
+            exportHandler[handlerName]();
+        }
+    }
+
+    document.getElementById("file").addEventListener("change", function (e) {
+        var files = e.target.files;
+        if (files.length == 0) return;
+        var f = files[0];
+        console.log(f);
+        if (!/\.xlsx$/g.test(f.name)) {
+            alert("仅支持读取xlsx格式！");
+            return;
+        }
+        handler.readWorkbookFromLocalFile(f, function (workbook) {
+            handler.readWorkbook(workbook);
+        });
+    });
+
+    handler = {
+        // 处理本地加载的文件
+        readWorkbookFromLocalFile(file, callback) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var data = e.target.result;
+                var workbook = XLSX.read(data, { type: "binary" });
+                if (callback) callback(workbook);
+            };
+            reader.readAsBinaryString(file);
+        },
+
+        readWorkbook(workbook) {
+            var sheetNames = workbook.SheetNames; // 工作表名称集合
+            var worksheet = workbook.Sheets[sheetNames[0]]; // 这里我们只读取第一张sheet
+            var csv = XLSX.utils.sheet_to_csv(worksheet);
+            document.getElementById("result").innerHTML = handler.csv2table(
+                csv,
+                true
+            );
+
+            // 合并单元格
+            handler.mergeTable(workbook, true);
+        },
+
+        // csv 数据转换为 table
+        csv2table(csv, showTab = false) {
+            var html = "<table>";
+            var rows = csv.split("\n");
+            rows.pop(); // 最后一行没用的
+            rows.forEach(function (row, idx) {
+                var columns = row.split(",");
+                if (showTab) {
+                    columns.unshift(idx + 1); // 添加行索引
+                    if (idx == 0) {
+                        // 添加列索引
+                        html += "<tr>";
+                        for (var i = 0; i < columns.length; i++) {
+                            html +=
+                                "<th>" +
+                                (i == 0 ? "" : String.fromCharCode(65 + i - 1)) +
+                                "</th>";
+                        }
+                        html += "</tr>";
+                    }
+                }
+                html += "<tr>";
+                columns.forEach(function (column) {
+                    html += "<td>" + column + "</td>";
+                });
+                html += "</tr>";
+            });
+            html += "</table>";
+            return html;
+        },
+
+        // 合并单元格
+        mergeTable(workbook, hasTab = false) {
+            let SheetNames = workbook.SheetNames[0];
+            let mergeInfo = workbook.Sheets[SheetNames]["!merges"];
+            console.log(mergeInfo);
+
+            let result = document.getElementById("result");
+
+            // 是否显示了tab
+            let baiseAdd = hasTab ? 1 : 0;
+
+            mergeInfo.forEach((item) => {
+                let start_r = item.s.r + baiseAdd;
+                let end_r = item.e.r + baiseAdd;
+
+                let start_c = item.s.c + baiseAdd;
+                let end_c = item.e.c + baiseAdd;
+
+                for (let i = start_r; i <= end_r; i++) {
+                    let row = document.querySelectorAll("#result tr")[i];
+                    for (let child = start_c; child <= end_c; child++) {
+                        if (child === start_c && i === start_r) {
+                            // 循环到就是第一个单元格，以这个单元格为开始进行合并
+                            row.children[child].classList.add("will_span");
+                            row.children[child].setAttribute("row", end_r - start_r + 1);
+                            row.children[child].setAttribute("col", end_c - start_c + 1);
+                        } else {
+                            // 只做标记，不在这里删除
+                            row.children[child].classList.add("remove");
+                        }
+                    }
+                }
+            });
+
+            // 移除对应的td
+            document.querySelectorAll(".remove").forEach((item) => {
+                item.parentNode.removeChild(item);
+            });
+
+            // 为大的td设置跨单元格合并
+            document.querySelectorAll(".will_span").forEach((item) => {
+                item.classList.remove("will_span");
+                item.rowSpan = item.getAttribute("row");
+                item.colSpan = item.getAttribute("col");
+            });
+        }
+    };
+
+    exportHandler = {
+        // 下载文件
+        downLoadFile(url, saveName) {
+            console.log("url,");
+            if (typeof url == "object" && url instanceof Blob) {
+                url = URL.createObjectURL(url); // 创建blob地址
+            }
+            var aLink = document.createElement("a");
+            aLink.href = url;
+            aLink.download = saveName || ""; // HTML5新增的属性，指定保存文件名，可以不要后缀，注意，file:///模式下不会生效
+            var event;
+            if (window.MouseEvent) event = new MouseEvent("click");
+            else {
+                event = document.createEvent("MouseEvents");
+                event.initMouseEvent(
+                    "click",
+                    true,
+                    false,
+                    window,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false,
+                    false,
+                    false,
+                    false,
+                    0,
+                    null
+                );
+            }
+            aLink.dispatchEvent(event);
+        },
+
+        downLoadFile(url, saveName) {
+            if (typeof url == "object" && url instanceof Blob) {
+                url = URL.createObjectURL(url); // 创建blob地址
+            }
+            var aLink = document.createElement("a");
+            aLink.href = url;
+            aLink.download = saveName || ""; // HTML5新增的属性，指定保存文件名，可以不要后缀，注意，file:///模式下不会生效
+            var event;
+            if (window.MouseEvent) event = new MouseEvent("click");
+            else {
+                event = document.createEvent("MouseEvents");
+                event.initMouseEvent(
+                    "click",
+                    true,
+                    false,
+                    window,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false,
+                    false,
+                    false,
+                    false,
+                    0,
+                    null
+                );
+            }
+            aLink.dispatchEvent(event);
+        },
+
+        sheet2blob(workbook, wopts) {
+            // 生成excel的配置项参考
+            var defaultWopts = {
+                bookType: "xlsx", // 要生成的文件类型
+                bookSST: false, // 是否生成Shared String Table，官方解释是，如果开启生成速度会下降，但在低版本IOS设备上有更好的兼容性
+                type: "binary"
+            };
+
+            wopts = Object.assign({}, defaultWopts, wopts);
+            var wbout = XLSX.write(workbook, wopts);
+            var blob = new Blob([exportHandler.s2ab(wbout)], {
+                type: "application/octet-stream"
+            });
+
+            return blob;
+        },
+
+        // 字符串转ArrayBuffer
+        s2ab(s) {
+            var buf = new ArrayBuffer(s.length);
+            var view = new Uint8Array(buf);
+            for (var i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xff;
+            return buf;
+        },
+
+        /**
+         * 根据先有的table 导出excel表
+         */
+        table2File() {
+            let table = document.querySelector("#result table");
+
+            if (!table) {
+                alert("请先加载excel文件");
+                return;
+            }
+            var sheet = XLSX.utils.table_to_sheet(table);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, sheet, "Sheet1");
+
+            exportHandler.downLoadFile(
+                exportHandler.sheet2blob(wb),
+                "导出table.xlsx"
+            );
+        },
+
+        object2File() {
+            var arr = [
+                { name: "张三", sex: "男", age: 18, register: new Date() },
+                { name: "李四", sex: "女", age: 22, register: new Date() }
+            ];
+
+            // 键名就是表头名称，值就是对应列的值
+            var sheetData = arr.map((item) => {
+                return {
+                    姓名: item.name,
+                    性别: item.sex,
+                    年龄: item.age,
+                    注册时间: item.register
+                };
+            });
+
+            var sheet = XLSX.utils.json_to_sheet(sheetData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, sheet, "Sheet1");
+
+            exportHandler.downLoadFile(exportHandler.sheet2blob(wb), "导出.xlsx");
+        },
+
+        array2File() {
+            var aoa = [
+                ["姓名", "性别", "年龄", "注册时间"],
+                ["张三", "男", 18, new Date()],
+                ["李四", "女", 22, new Date()]
+            ];
+            var sheet = XLSX.utils.aoa_to_sheet(aoa);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, sheet, "Sheet1");
+
+            exportHandler.downLoadFile(
+                exportHandler.sheet2blob(wb),
+                "二维数组导出.xlsx"
+            );
+        },
+
+        arrayMerge2File() {
+            var aoa = [
+                ["主要信息", null, null, "其它信息"], // 特别注意合并的地方后面预留2个null
+                ["姓名", "性别", "年龄", "注册时间"],
+                ["张三", "男", 18, new Date()],
+                ["李四", "女", 22, new Date()]
+            ];
+            var sheet = XLSX.utils.aoa_to_sheet(aoa);
+            sheet["!merges"] = [
+                // 设置A1-C1的单元格合并
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, sheet, "Sheet1");
+
+            exportHandler.downLoadFile(
+                exportHandler.sheet2blob(wb),
+                "单元格合并示例.xlsx"
+            );
+        }
+    };
+
+    var vue = new Vue({
+        el: '#app',
+        theme: 'blue',
+        data: {
+            label: 'point',
+            fileList: [],
+            //表单数据
+            formData: {},
+            //图数据库容器
+            viz: {},
+            cypher: '',
+            input1: '',
+            input2: '',
+            input3: '',
+            //点击获取的结点信息
+            node: {
+                id: '',
+                name: '',
+                url: '',
+                definition: '',
+                feature: '',
+                page: ''
+            },
+            nodeInfo: "",
+        }
+    })
+</script>
+
+</html>

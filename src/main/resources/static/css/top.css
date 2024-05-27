@@ -1,0 +1,26 @@
+.box_top{
+    height:40px;
+    border-top: 3px solid #0800ff;
+    border-bottom: 1px solid #8394e7;
+    text-align: center;
+    background-color: #d0d6f6;
+}
+
+.box_top a{
+    vertical-align: top;
+    width: 320px;
+    height: 40px;
+    display: inline-block;
+    text-align: center;
+    line-height: 40px;
+    font-size: 20px;
+    color: #999999;
+    text-decoration: none;
+    margin-top: -5px;
+}
+
+.box_top a:hover{
+    vertical-align: top;
+    background-color: seagreen;
+    color: black;
+}

@@ -1,0 +1,98 @@
+.yuanxing{
+    width:96px;
+    height:96px;
+    margin: 5px 5px 5px 0;
+    position: absolute;
+    border-radius: 50px;
+}
+.showexcel {
+    width: 1200px;
+    height: 600px;
+    overflow-y: auto;
+    border: #3a8ee6;
+    position: fixed;
+    bottom: 50px;
+    right:  250px;
+    outline: rgba(23, 125, 176, 1) solid 5px;
+    background-color: white;
+    border-radius: 10px 10px 10px 10px;
+}
+.show_head {
+    width: 1200px;
+    height: 200px;
+    overflow-y: auto;
+    border: #6ca7e3;
+    position: fixed;
+    bottom: 700px;
+    right:  250px;
+    outline: rgba(23, 125, 176, 1) solid 5px;
+    background-color: white;
+    border-radius: 10px 10px 10px 10px;
+}
+.name {
+    margin: 80px 100px 100px 200px;
+    position: fixed ;
+    color: rgba(0, 0, 0, 1);
+    font-size: 35px;
+}
+.sign{
+    margin: 130px 100px 100px 200px;
+    position: fixed ;
+    color: rgba(0, 0, 0, 1);
+    font-size: 18px;
+}
+.touxiang {
+    width: 100px;
+    height: 100px;
+    margin: 50px 100px 100px 70px;
+    position: fixed ;
+    border-radius: 100px 100px 100px 100px;
+    outline: rgba(23, 125, 176, 1) solid 5px;
+}
+.btn {
+    text-align: center;
+    background: #6f7180;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0 auto;
+}
+.box{
+    height:40px;
+    border-top: 3px solid #0800ff;
+    border-bottom: 1px solid #8394e7;
+    text-align: center;
+    background-color: #d0d6f6;
+}
+
+.box a{
+    vertical-align: top;
+    width: 320px;
+    height: 40px;
+    display: inline-block;
+    text-align: center;
+    line-height: 40px;
+    font-size: 20px;
+    color: #999999;
+    text-decoration: none;
+    margin-top: -5px;
+}
+
+.box a:hover{
+    vertical-align: top;
+    background-color: seagreen;
+    color: black;
+}
+
+.links a {
+    margin: 0 3px;
+}
+
+body{
+    background-image: url("../image/1.png")
+}

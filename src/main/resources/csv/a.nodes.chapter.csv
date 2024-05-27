@@ -1,0 +1,8 @@
+:ID,name,学习难度:double,definition,:LABEL
+17,排序,2.5,,chapter
+281,栈和队列,,,chapter
+300,线性表,,,chapter
+359,数组与矩阵,,,chapter
+388,树与二叉树,,,chapter
+445,图,,图是一种数据结构，由顶点和有穷非空集合和顶点之间的边的集合组成,chapter
+500,查找,2.5,,chapter
