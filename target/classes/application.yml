@@ -1,0 +1,27 @@
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    #mysql???
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/neo4j?serverTimezone=UTC
+      username: root
+      password: hgvgqweabc123
+  #neo4j???
+  neo4j:
+    authentication:
+      username: neo4j
+      password: 123456
+    uri: bolt://localhost:7687
+
+mybatis-plus:
+  global-config:
+    #??
+    id-type: auto
+    banner: off
+  #????
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
